@@ -1,15 +1,17 @@
 import React, { useState } from "react";
-import "./SignupForm.css"; 
+import "./SignupForm.css";
 
 function SignupForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
+  const [events, setEvents] = useState([]);
 
   const backend = process.env.REACT_APP_BACKEND_URL || "http://localhost:4000";
 
+  // Save email
   async function handleSubmit(e) {
     e.preventDefault();
-    setStatus("Sending...");
+    setStatus("⏳ Saving your email...");
     try {
       const res = await fetch(`${backend}/api/signup`, {
         method: "POST",
@@ -18,33 +20,85 @@ function SignupForm() {
       });
       const j = await res.json();
       if (res.ok) {
-        setStatus("Thanks — we saved your email!");
-        setEmail("");
+        setStatus("✅ Thanks! We saved your email.");
       } else {
-        setStatus(j.error || "Something went wrong");
+        setStatus("⚠️ " + (j.error || "Something went wrong"));
       }
-    } catch (err) {
-      setStatus("Network error");
+    } catch {
+      setStatus("❌ Network error");
+    }
+  }
+
+  // Load GitHub events
+  async function loadEvents() {
+    setStatus("⏳ Fetching GitHub events...");
+    try {
+      const res = await fetch(`${backend}/api/events`);
+      const j = await res.json();
+      if (j.ok) {
+        setEvents(j.raw);
+        setStatus("📢 Latest GitHub events loaded!");
+      } else {
+        setStatus("⚠️ Failed to fetch events");
+      }
+    } catch {
+      setStatus("❌ Network error");
+    }
+  }
+
+  // Send email immediately
+  async function sendNow() {
+    setStatus("⏳ Sending update to your inbox...");
+    try {
+      const res = await fetch(`${backend}/api/send-to-me`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const j = await res.json();
+      if (res.ok) {
+        setStatus("📩 Email sent successfully! Check your inbox.");
+      } else {
+        setStatus("⚠️ " + (j.error || "Something went wrong"));
+      }
+    } catch {
+      setStatus("❌ Network error");
     }
   }
 
   return (
-    <div className="signup-container">
-      <h2 className="title">Get GitHub timeline updates</h2>
-      <form onSubmit={handleSubmit} className="signup-form">
+    <div className="card">
+      <h2>📬 GitHub Timeline Updates</h2>
+      <form onSubmit={handleSubmit} className="form">
         <input
           type="email"
           placeholder="Enter your email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="email-input"
         />
-        <button type="submit" className="submit-btn">
-          Subscribe
-        </button>
+        <button type="submit">Subscribe</button>
       </form>
+
+      <div className="actions">
+        <button onClick={loadEvents}>🔍 Show Latest Events</button>
+        <button onClick={sendNow} disabled={!email}>
+          📩 Send Me Updates
+        </button>
+      </div>
+
       {status && <div className="status">{status}</div>}
+
+      {events.length > 0 && (
+        <ul className="events">
+          {events.map((e, i) => (
+            <li key={i}>
+              <strong>{e.type}</strong> — {e.repo?.name} by{" "}
+              {e.actor?.login}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
