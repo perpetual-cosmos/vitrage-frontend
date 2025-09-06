@@ -11,7 +11,7 @@ function SignupForm() {
   // Function to save email
   async function handleSubmit(e) {
     e.preventDefault();
-    setStatus("Saving your email...");
+    setStatus("Saving...");
     try {
       const res = await fetch(`${backend}/api/signup`, {
         method: "POST",
@@ -81,7 +81,7 @@ function SignupForm() {
       </form>
 
       <div className="actions">
-        <button onClick={loadEvents}>🔍 Show Latest Events</button>
+        <button onClick={loadEvents}>Show Latest Events</button>
         <button onClick={sendNow} disabled={!email}>
           Send Me Updates
         </button>
